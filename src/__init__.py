@@ -10,6 +10,7 @@ from typing import Any, Deque, List, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 
+# noinspection PyTypeHints,PyTypeChecker
 class _DatabaseWorker(threading.Thread):
     """
     Internal worker thread that processes all write operations from a queue.
@@ -71,6 +72,7 @@ class _DatabaseWorker(threading.Thread):
             logger.info("Database connection closed.")
 
 
+# noinspection PyTypeHints
 class AsyncSQLite:
     """
     A thread-safe SQLite3 wrapper that performs write operations in a separate thread.
