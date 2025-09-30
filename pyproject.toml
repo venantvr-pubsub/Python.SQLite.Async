@@ -32,8 +32,8 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-"Homepage" = "https://github.com/your-username/async-sqlite-queue"
-"Bug Tracker" = "https://github.com/your-username/async-sqlite-queue/issues"
+"Homepage" = "https://github.com/venantvr-pubsub/Python.SQLite.Async"
+"Bug Tracker" = "https://github.com/venantvr-pubsub/Python.SQLite.Async/issues"
 
 
 # Dépendances optionnelles, utiles pour le développement et les tests
@@ -41,4 +41,5 @@ dependencies = []
 test = [
     "pytest",
     "pytest-mock",
+    "setuptools>=61.0",
 ]
