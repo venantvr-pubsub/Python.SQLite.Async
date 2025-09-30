@@ -1,0 +1,9 @@
+
+[dev]
+black
+ruff
+build
+
+[test]
+pytest
+pytest-mock

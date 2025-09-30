@@ -1,0 +1,125 @@
+Metadata-Version: 2.4
+Name: async-sqlite-queue
+Version: 0.1.0
+Summary: A thread-safe SQLite3 wrapper that performs writes in a background thread for non-blocking operations.
+Author-email: venantvr <venantvr@gmail.com>
+Project-URL: Homepage, https://github.com/venantvr-pubsub/Python.SQLite.Async
+Project-URL: Bug Tracker, https://github.com/venantvr-pubsub/Python.SQLite.Async/issues
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Topic :: Database
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Provides-Extra: test
+Requires-Dist: pytest; extra == "test"
+Requires-Dist: pytest-mock; extra == "test"
+Provides-Extra: dev
+Requires-Dist: black; extra == "dev"
+Requires-Dist: ruff; extra == "dev"
+Requires-Dist: build; extra == "dev"
+
+# Async SQLite Queue
+
+[![PyPI version](https://badge.fury.io/py/async-sqlite-queue.svg)](https://badge.fury.io/py/async-sqlite-queue)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+Une librairie Python simple et robuste pour interagir avec une base de données SQLite de manière thread-safe, en déportant toutes les opérations d'écriture dans un thread
+dédié pour ne pas bloquer votre application principale.
+
+## 🚀 Fonctionnalités
+
+* **Écritures non-bloquantes** : Les `INSERT`, `UPDATE`, `DELETE` sont ajoutés à une file et exécutés en arrière-plan.
+* **Thread-Safe** : Gérez vos accès à SQLite depuis plusieurs threads sans corruption de données.
+* **API simple** : Des méthodes claires (`execute_write`, `execute_read`) pour une prise en main immédiate.
+* **Mode WAL activé** : Active automatiquement le mode "Write-Ahead Logging" pour une meilleure concurrence entre les lectures et les écritures.
+* **Support In-Memory partagé** : Utilise automatiquement `file::memory:?cache=shared` pour les bases de données en mémoire accessibles par plusieurs threads.
+* **Aucune dépendance externe** : Repose uniquement sur la bibliothèque standard de Python.
+
+## 📦 Installation
+
+```bash
+pip install async-sqlite-queue
+````
+
+## 💡 Utilisation
+
+Voici un exemple simple pour démarrer, écrire des données de manière asynchrone, et les lire de manière synchrone.
+
+```python
+import time
+import logging
+from async_sqlite_queue import AsyncSQLite
+
+# Configurez le logging pour voir ce qui se passe
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(threadName)s - %(message)s')
+
+# 1. Initialisez le manager de base de données (sur disque ou en mémoire)
+db = AsyncSQLite(db_path="my_app.db")
+
+# 2. Démarrez le worker en arrière-plan
+# Vous pouvez aussi passer un script de migration qui ne s'exécutera que si la table "users" n'existe pas.
+# db.start(migration_script_path="schema.sql", check_table="users")
+db.start()
+
+# 3. Attendez que la base de données soit prête (essentiel au démarrage d'une app)
+if not db.wait_for_ready():
+    raise RuntimeError("La base de données n'a pas pu s'initialiser.")
+
+print("La base de données est prête !")
+
+# 4. Exécutez des écritures (non-bloquant)
+db.execute_write("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, email TEXT)")
+db.execute_write("INSERT INTO users (name, email) VALUES (?, ?)", ("Alice", "alice@example.com"))
+db.execute_write("INSERT INTO users (name, email) VALUES (?, ?)", ("Bob", "bob@example.com"))
+
+print("Opérations d'écriture mises en file.")
+
+# Laissez un peu de temps au worker pour traiter la file
+time.sleep(0.1)
+
+# 5. Lisez les données (bloquant, retourne les résultats immédiatement)
+users = db.execute_read("SELECT name, email FROM users ORDER BY name")
+print("\nUtilisateurs trouvés :")
+for user in users:
+    print(f"- {user[0]} ({user[1]})")
+
+# 6. Arrêtez proprement le worker à la fin de votre application
+db.stop()
+print("\nWorker arrêté.")
+```
+
+## 🔧 Développement
+
+Pour contribuer ou lancer les tests localement :
+
+```bash
+# Clonez le dépôt
+git clone [https://github.com/venantvr-pubsub/Python.SQLite.Async.git](https://github.com/venantvr-pubsub/Python.SQLite.Async.git)
+cd Python.SQLite.Async
+
+# 1. Installez l'environnement et les dépendances
+make install
+
+# 2. Activez l'environnement virtuel
+source .venv/bin/activate
+
+# 3. Lancez les tests
+make test
+
+# Autres commandes utiles
+make format  # Formate le code
+make lint    # Vérifie la qualité du code
+make build   # Construit les paquets pour la distribution
+```
+
+## 📄 Licence
+
+Ce projet est sous licence MIT.
