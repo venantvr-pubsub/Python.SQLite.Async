@@ -1,0 +1,44 @@
+[build-system]
+# Configuration standard pour utiliser setuptools comme système de build
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+# Nom du package tel qu'il apparaîtra sur PyPI
+name = "Python.SQLite.Async"
+version = "0.1.0"
+authors = [
+    { name = "venantvr", email = "venantvr@gmail.com" },
+]
+description = "A thread-safe SQLite3 wrapper that performs writes in a background thread for non-blocking operations."
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Database",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+# La librairie elle-même n'a aucune dépendance externe,
+# tout est basé sur la bibliothèque standard de Python !
+dependencies = []
+
+[project.urls]
+"Homepage" = "https://github.com/your-username/async-sqlite-queue"
+"Bug Tracker" = "https://github.com/your-username/async-sqlite-queue/issues"
+
+
+# Dépendances optionnelles, utiles pour le développement et les tests
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-mock",
+]
