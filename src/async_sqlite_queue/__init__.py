@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class _DatabaseWorker(threading.Thread):
+
     def __init__(
             self,
             db_path: str,
@@ -57,6 +58,7 @@ class _DatabaseWorker(threading.Thread):
 
 
 class AsyncSQLite:
+
     def __init__(self, db_path: str = ":memory:"):
         if db_path == ":memory:":
             self.db_path = "file::memory:?cache=shared"
