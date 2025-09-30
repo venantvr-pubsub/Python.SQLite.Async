@@ -2,21 +2,13 @@ import os
 import tempfile
 import threading
 import time
-from pathlib import Path
 
 import pytest
 
-# Assurez-vous que le chemin vers la librairie est dans le sys.path
-# (utile si la librairie n'est pas encore installée)
-try:
-    from async_sqlite_queue import AsyncSQLite
-except ImportError:
-    import sys
-
-    sys.path.insert(0, str(Path(__file__).parent.parent))
-    from async_sqlite_queue import AsyncSQLite
+from sqlite.async_sqlite import AsyncSQLite
 
 
+# ... (Toutes les fixtures et tous les tests restent inchangés) ...
 @pytest.fixture
 def temp_db_path():
     """Crée un chemin vers un fichier de base de données temporaire."""

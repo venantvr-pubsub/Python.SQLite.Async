@@ -1,11 +1,9 @@
 [build-system]
-# Configuration standard pour utiliser setuptools comme système de build
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-# Nom du package tel qu'il apparaîtra sur PyPI
-name = "Python.SQLite.Async"
+name = "async-sqlite-queue"
 version = "0.1.0"
 authors = [
     { name = "venantvr", email = "venantvr@gmail.com" },
@@ -26,20 +24,20 @@ classifiers = [
     "Topic :: Database",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-
-# La librairie elle-même n'a aucune dépendance externe,
-# tout est basé sur la bibliothèque standard de Python !
 dependencies = []
 
 [project.urls]
 "Homepage" = "https://github.com/venantvr-pubsub/Python.SQLite.Async"
 "Bug Tracker" = "https://github.com/venantvr-pubsub/Python.SQLite.Async/issues"
 
-
-# Dépendances optionnelles, utiles pour le développement et les tests
+# Dépendances optionnelles
 [project.optional-dependencies]
 test = [
     "pytest",
     "pytest-mock",
-    "setuptools>=61.0",
+]
+dev = [
+    "black", # Formatteur de code
+    "ruff", # Linter rapide
+    "build", # Outil pour construire le paquet
 ]

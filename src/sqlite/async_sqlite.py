@@ -3,18 +3,19 @@ import sqlite3
 import threading
 import time
 from collections import deque
-from os import path
 from typing import Any, Deque, List, Optional, Tuple
+
+# Exporte publiquement la classe principale pour un import facile
+__all__ = ["AsyncSQLite"]
 
 # Standard logging setup for a library
 logger = logging.getLogger(__name__)
 
 
-# noinspection PyTypeHints,PyTypeChecker
 class _DatabaseWorker(threading.Thread):
+    # ... (contenu de la classe _DatabaseWorker inchangé) ...
     """
     Internal worker thread that processes all write operations from a queue.
-    (This is the same worker as before, but now it's a private part of the library).
     """
 
     def __init__(
@@ -56,7 +57,11 @@ class _DatabaseWorker(threading.Thread):
                     if sql is None:
                         break
 
-                    conn.execute(sql, params)
+                    # Permet d'exécuter des scripts complets
+                    if params is None:
+                        conn.executescript(sql)
+                    else:
+                        conn.execute(sql, params)
                     conn.commit()
                 except IndexError:
                     # Queue is empty, wait a bit
@@ -72,8 +77,8 @@ class _DatabaseWorker(threading.Thread):
             logger.info("Database connection closed.")
 
 
-# noinspection PyTypeHints
 class AsyncSQLite:
+    # ... (contenu de la classe AsyncSQLite presque inchangé) ...
     """
     A thread-safe SQLite3 wrapper that performs write operations in a separate thread.
     """
@@ -92,8 +97,11 @@ class AsyncSQLite:
         self._db_ready_event = threading.Event()
         self._worker: Optional[_DatabaseWorker] = None
 
-    def start(self) -> None:
-        """Starts the background database worker thread."""
+    def start(self, migration_script_path: Optional[str] = None, check_table: Optional[str] = None) -> None:
+        """
+        Starts the background database worker thread.
+        If a migration script is provided, it runs it if the check_table is missing.
+        """
         if self._worker is not None and self._worker.is_alive():
             logger.warning("Worker is already running.")
             return
@@ -107,6 +115,21 @@ class AsyncSQLite:
             self._db_ready_event,
         )
         self._worker.start()
+
+        if migration_script_path and check_table:
+            if self.wait_for_ready():
+                logger.info(f"Checking for table '{check_table}' to decide on migration...")
+                try:
+                    res = self.execute_read(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{check_table}'")
+                    if not res:
+                        logger.info(f"Table '{check_table}' not found, queuing migration script: {migration_script_path}")
+                        self.execute_script(migration_script_path)
+                    else:
+                        logger.info(f"Table '{check_table}' already exists, skipping migration.")
+                except Exception as e:
+                    logger.error(f"Failed to check or run migration: {e}")
+            else:
+                logger.error("Worker did not become ready, cannot run migration.")
 
     def wait_for_ready(self, timeout: float = 10.0) -> bool:
         """Waits for the database worker to be initialized."""
@@ -142,11 +165,9 @@ class AsyncSQLite:
         """
         Returns a new, read-only connection to the database.
         """
-        # For shared in-memory DBs, we must connect using the same URI
         if self.db_path.startswith("file:"):
             return sqlite3.connect(self.db_path, uri=True, check_same_thread=False)
 
-        # For file-based DBs, we can use the immutable flag for a true read-only connection
         db_uri = f"file:{self.db_path}?mode=ro"
         return sqlite3.connect(db_uri, uri=True, check_same_thread=False)
 
@@ -154,14 +175,6 @@ class AsyncSQLite:
         """
         Executes a read operation (SELECT) and returns the results immediately.
         This method is blocking.
-
-        Args:
-            sql: The SQL SELECT statement.
-            params: Parameters to bind to the statement.
-            fetch: "all" to fetch all rows, "one" to fetch a single row.
-
-        Returns:
-            A list of rows or a single row, depending on the `fetch` parameter.
         """
         if not self._db_ready_event.is_set():
             raise ConnectionError("Database is not ready yet. Call wait_for_ready() first.")
@@ -179,9 +192,10 @@ class AsyncSQLite:
 
     def execute_script(self, script_path: str) -> None:
         """
-        Executes an entire SQL script. This is typically used for initialization.
-        Since it modifies the schema, it is treated as a write operation.
+        Executes an entire SQL script file. This is treated as a write operation.
         """
         with open(script_path) as f:
             script = f.read()
-        self.execute_write(script, ())
+        # On utilise `None` comme marqueur pour `executescript` dans le worker
+        with self._queue_lock:
+            self._write_queue.append((script, None))
