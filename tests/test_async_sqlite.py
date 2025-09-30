@@ -5,7 +5,7 @@ import time
 
 import pytest
 
-from sqlite.async_sqlite import AsyncSQLite
+from async_sqlite_queue import AsyncSQLite
 
 
 # ... (Toutes les fixtures et tous les tests restent inchangés) ...
