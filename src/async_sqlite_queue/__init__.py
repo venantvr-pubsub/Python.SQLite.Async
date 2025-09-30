@@ -30,24 +30,21 @@ class _DatabaseWorker(threading.Thread):
 
             self._ready_event.set()
 
-            # --- BOUCLE CORRIGÉE ---
-            # La boucle est maintenant infinie et ne s'arrête que lorsque
-            # le sentinel 'None' est trouvé dans la file.
             while True:
                 try:
                     sql, params = self._write_queue.popleft()
-
-                    if sql is None:  # Sentinel d'arrêt
+                    if sql is None:
                         break
 
+                    # On ne commit manuellement que pour les requêtes uniques.
+                    # executescript() gère sa propre transaction et son propre commit.
                     if params is None:
                         conn.executescript(sql)
                     else:
                         conn.execute(sql, params)
-                    conn.commit()
+                        conn.commit()
+
                 except IndexError:
-                    # Si la file est vide et que l'événement d'arrêt est signalé,
-                    # on sort pour éviter une attente infinie.
                     if self._stop_event.is_set():
                         break
                     time.sleep(0.01)
@@ -67,34 +64,26 @@ class AsyncSQLite:
             self.db_path = "file::memory:?cache=shared"
         else:
             self.db_path = db_path
-        self._write_queue: Deque[Optional[Tuple[str, tuple]]] = deque()
+        self._write_queue: Deque[Optional[Tuple[str, Optional[tuple]]]] = deque()
         self._queue_lock = threading.Lock()
         self._stop_worker_event = threading.Event()
         self._db_ready_event = threading.Event()
         self._worker: Optional[_DatabaseWorker] = None
 
-    # noinspection PyUnusedLocal
-    def start(self, migration_script: Optional[str] = None, check_table: Optional[str] = None) -> None:
+    def start(self) -> None:
         if self._worker is not None and self._worker.is_alive():
             return
         self._stop_worker_event.clear()
         self._worker = _DatabaseWorker(self.db_path, self._write_queue, self._stop_worker_event, self._db_ready_event)
         self._worker.start()
 
-        # Note: La logique de migration a été déplacée dans le logger lui-même,
-        # mais cette structure de base reste utile.
-
     def wait_for_ready(self, timeout: float = 10.0) -> bool:
         return self._db_ready_event.wait(timeout=timeout)
 
-    # --- MÉTHODE STOP() CORRIGÉE ---
-    # noinspection PyTypeChecker
     def stop(self, timeout: float = 5.0) -> None:
         if self._worker is None or not self._worker.is_alive():
             return
 
-        # 1. Attendre activement que la file se vide.
-        # C'est la garantie que toutes les commandes (y compris CREATE TABLE) sont envoyées.
         start_time = time.time()
         while len(self._write_queue) > 0:
             if time.time() - start_time > timeout:
@@ -102,14 +91,11 @@ class AsyncSQLite:
                 break
             time.sleep(0.01)
 
-        # 2. Envoyer le sentinel d'arrêt au worker.
         with self._queue_lock:
+            # noinspection PyTypeChecker
             self._write_queue.append((None, None))
 
-        # 3. Utiliser l'événement pour réveiller le worker s'il est en attente
         self._stop_worker_event.set()
-
-        # 4. Attendre la fin du thread
         self._worker.join(timeout=timeout)
         if self._worker.is_alive():
             logger.error("Database worker failed to shut down in time.")
@@ -122,7 +108,8 @@ class AsyncSQLite:
 
     def execute_read(self, sql: str, params: tuple = (), fetch: str = "all") -> Union[List[Tuple], Tuple, None]:
         if not self._db_ready_event.is_set():
-            raise ConnectionError("Database is not ready.")
+            raise ConnectionError("Database is not ready yet.")
+
         use_uri = self.db_path.startswith("file:")
         with sqlite3.connect(self.db_path, uri=use_uri, check_same_thread=False, timeout=10) as conn:
             cursor = conn.cursor()
@@ -130,3 +117,27 @@ class AsyncSQLite:
             if fetch == "one":
                 return cursor.fetchone()
             return cursor.fetchall()
+
+    def queue_size(self) -> int:
+        with self._queue_lock:
+            return len(self._write_queue)
+
+    def wait_for_queue_empty(self, timeout: float = 5.0) -> bool:
+        start_time = time.time()
+        while self.queue_size() > 0:
+            if time.time() - start_time > timeout:
+                logger.warning(f"Queue did not empty within {timeout}s timeout")
+                return False
+            time.sleep(0.01)
+        return True
+
+    def execute_script(self, script_path: str) -> None:
+        try:
+            with open(script_path, 'r', encoding='utf-8') as f:
+                script = f.read()
+        except FileNotFoundError:
+            logger.error(f"Script file not found: {script_path}")
+            raise
+
+        with self._queue_lock:
+            self._write_queue.append((script, None))

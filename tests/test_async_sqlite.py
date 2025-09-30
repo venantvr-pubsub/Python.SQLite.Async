@@ -69,6 +69,7 @@ def test_lifecycle_start_wait_stop(temp_db_path):
     assert db._worker is None
 
 
+# noinspection PyUnresolvedReferences
 def test_write_and_read(db_manager):
     create_sql = "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)"
     db_manager.execute_write(create_sql)
@@ -83,6 +84,7 @@ def test_write_and_read(db_manager):
     assert results[1][0] == "Bob"
 
 
+# noinspection PyUnresolvedReferences
 def test_execute_read_fetch_one(db_manager):
     db_manager.execute_write("CREATE TABLE settings (key TEXT, value TEXT)")
     db_manager.execute_write("INSERT INTO settings VALUES (?, ?)", ("theme", "dark"))
@@ -98,6 +100,7 @@ def test_read_before_ready():
         db.execute_read("SELECT 1")
 
 
+# noinspection PyUnresolvedReferences
 def test_execute_script(db_manager, tmp_path):
     script_content = """
     CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT);
@@ -112,6 +115,7 @@ def test_execute_script(db_manager, tmp_path):
     assert count == 2
 
 
+# noinspection PyUnresolvedReferences
 def test_concurrent_writes(db_manager):
     """Teste la robustesse avec plusieurs threads écrivant en même temps."""
     db_manager.execute_write("CREATE TABLE records (id INTEGER PRIMARY KEY, thread_id INTEGER, value INTEGER)")
