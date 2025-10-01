@@ -35,6 +35,7 @@ dependencies = []
 test = [
     "pytest",
     "pytest-mock",
+    "setuptools"
 ]
 dev = [
     "black", # Formatteur de code
