@@ -1,5 +1,5 @@
 Metadata-Version: 2.4
-Name: async-sqlite-queue
+Name: python_sqlite_async
 Version: 0.1.0
 Summary: A thread-safe SQLite3 wrapper that performs writes in a background thread for non-blocking operations.
 Author-email: venantvr <venantvr@gmail.com>
@@ -21,6 +21,7 @@ Description-Content-Type: text/markdown
 Provides-Extra: test
 Requires-Dist: pytest; extra == "test"
 Requires-Dist: pytest-mock; extra == "test"
+Requires-Dist: setuptools; extra == "test"
 Provides-Extra: dev
 Requires-Dist: black; extra == "dev"
 Requires-Dist: ruff; extra == "dev"
@@ -46,8 +47,8 @@ dédié pour ne pas bloquer votre application principale.
 ## 📦 Installation
 
 ```bash
-pip install async-sqlite-queue
-````
+pip install python-sqlite-async
+```
 
 ## 💡 Utilisation
 
@@ -56,7 +57,7 @@ Voici un exemple simple pour démarrer, écrire des données de manière asynchr
 ```python
 import time
 import logging
-from async_sqlite_queue import AsyncSQLite
+from python_sqlite_async import AsyncSQLite
 
 # Configurez le logging pour voir ce qui se passe
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(threadName)s - %(message)s')

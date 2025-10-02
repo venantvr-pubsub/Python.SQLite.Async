@@ -4,7 +4,7 @@ import threading
 
 import pytest
 
-from async_sqlite_queue import AsyncSQLite
+from python_sqlite_async import AsyncSQLite
 
 
 @pytest.fixture

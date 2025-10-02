@@ -18,8 +18,8 @@ dédié pour ne pas bloquer votre application principale.
 ## 📦 Installation
 
 ```bash
-pip install async-sqlite-queue
-````
+pip install python-sqlite-async
+```
 
 ## 💡 Utilisation
 
@@ -28,7 +28,7 @@ Voici un exemple simple pour démarrer, écrire des données de manière asynchr
 ```python
 import time
 import logging
-from async_sqlite_queue import AsyncSQLite
+from python_sqlite_async import AsyncSQLite
 
 # Configurez le logging pour voir ce qui se passe
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(threadName)s - %(message)s')

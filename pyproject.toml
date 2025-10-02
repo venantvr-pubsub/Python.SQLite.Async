@@ -1,9 +1,11 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = [
+    "setuptools>=61.0",
+]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "async-sqlite-queue"
+name = "python_sqlite_async"
 version = "0.1.0"
 authors = [
     { name = "venantvr", email = "venantvr@gmail.com" },
@@ -27,18 +29,17 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-"Homepage" = "https://github.com/venantvr-pubsub/Python.SQLite.Async"
+Homepage = "https://github.com/venantvr-pubsub/Python.SQLite.Async"
 "Bug Tracker" = "https://github.com/venantvr-pubsub/Python.SQLite.Async/issues"
 
-# Dépendances optionnelles
 [project.optional-dependencies]
 test = [
     "pytest",
     "pytest-mock",
-    "setuptools"
+    "setuptools",
 ]
 dev = [
-    "black", # Formatteur de code
-    "ruff", # Linter rapide
-    "build", # Outil pour construire le paquet
+    "black",
+    "ruff",
+    "build",
 ]
