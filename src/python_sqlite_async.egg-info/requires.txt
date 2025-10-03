@@ -3,6 +3,7 @@
 black
 ruff
 build
+setuptools
 
 [test]
 pytest

@@ -29,6 +29,7 @@ def db_manager(temp_db_path):
 
 # ... les tests qui passent restent inchangés ...
 
+
 def test_initialization_file_path(temp_db_path):
     db = AsyncSQLite(temp_db_path)
     assert db.db_path == temp_db_path
@@ -61,6 +62,7 @@ def test_read_before_ready():
 
 # --- TESTS CORRIGÉS ---
 
+
 def test_write_and_read(db_manager):
     create_sql = "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)"
     db_manager.execute_write(create_sql)
@@ -85,7 +87,9 @@ def test_execute_read_fetch_one(db_manager):
     # Remplacer wait_for_queue_empty par sync
     assert db_manager.sync(timeout=5)
 
-    result = db_manager.execute_read("SELECT value FROM settings WHERE key=?", ("theme",), fetch="one")
+    result = db_manager.execute_read(
+        "SELECT value FROM settings WHERE key=?", ("theme",), fetch="one"
+    )
     assert result is not None
     assert result[0] == "dark"
 
@@ -108,7 +112,9 @@ def test_execute_script(db_manager, tmp_path):
 
 
 def test_concurrent_writes(db_manager):
-    db_manager.execute_write("CREATE TABLE records (id INTEGER PRIMARY KEY, thread_id INTEGER, value INTEGER)")
+    db_manager.execute_write(
+        "CREATE TABLE records (id INTEGER PRIMARY KEY, thread_id INTEGER, value INTEGER)"
+    )
     # Une synchronisation ici garantit que la table est créée avant le reste.
     assert db_manager.sync(timeout=5)
 
@@ -120,8 +126,7 @@ def test_concurrent_writes(db_manager):
         # noinspection PyShadowingNames
         for i in range(writes_per_thread):
             db_manager.execute_write(
-                "INSERT INTO records (thread_id, value) VALUES (?, ?)",
-                (thread_id, i)
+                "INSERT INTO records (thread_id, value) VALUES (?, ?)", (thread_id, i)
             )
 
     for i in range(num_threads):
@@ -135,5 +140,7 @@ def test_concurrent_writes(db_manager):
     # Attendre que toutes les écritures soient terminées
     assert db_manager.sync(timeout=10), "La synchronisation a échoué."
 
-    total_records = db_manager.execute_read("SELECT COUNT(*) FROM records", fetch="one")[0]
+    total_records = db_manager.execute_read(
+        "SELECT COUNT(*) FROM records", fetch="one"
+    )[0]
     assert total_records == num_threads * writes_per_thread

@@ -11,7 +11,13 @@ logger = logging.getLogger(__name__)
 
 class _DatabaseWorker(threading.Thread):
 
-    def __init__(self, db_path: str, write_queue: Deque, stop_event: threading.Event, ready_event: threading.Event) -> None:
+    def __init__(
+        self,
+        db_path: str,
+        write_queue: Deque,
+        stop_event: threading.Event,
+        ready_event: threading.Event,
+    ) -> None:
         super().__init__(name="AsyncSQLiteWorker")
         self.db_path = db_path
         self._write_queue = write_queue
@@ -28,7 +34,7 @@ class _DatabaseWorker(threading.Thread):
                 timeout=30.0,
                 check_same_thread=False,
                 uri=use_uri,
-                isolation_level=None  # Mode autocommit
+                isolation_level=None,  # Mode autocommit
             )
 
             if not self.db_path.startswith("file::memory:"):
@@ -45,7 +51,7 @@ class _DatabaseWorker(threading.Thread):
                         break
 
                     # --- NOUVELLE LOGIQUE DE SYNCHRONISATION ---
-                    if sql == '__SYNC__':
+                    if sql == "__SYNC__":
                         # Si on trouve le marqueur, on active l'événement
                         # que le thread principal attend.
                         sync_event = params
@@ -78,25 +84,35 @@ class AsyncSQLite:
             self.db_path = "file::memory:?cache=shared"
         else:
             self.db_path = db_path
-        self._write_queue: Deque = deque()  # La queue peut maintenant contenir différents types
+        self._write_queue: Deque = (
+            deque()
+        )  # La queue peut maintenant contenir différents types
         self._queue_lock = threading.Lock()
         self._stop_worker_event = threading.Event()
         self._db_ready_event = threading.Event()
         self._worker: Optional[_DatabaseWorker] = None
 
     def start(self) -> None:
-        if self._worker is not None and self._worker.is_alive(): return
+        if self._worker is not None and self._worker.is_alive():
+            return
         self._stop_worker_event.clear()
-        self._worker = _DatabaseWorker(self.db_path, self._write_queue, self._stop_worker_event, self._db_ready_event)
+        self._worker = _DatabaseWorker(
+            self.db_path,
+            self._write_queue,
+            self._stop_worker_event,
+            self._db_ready_event,
+        )
         self._worker.start()
 
     def wait_for_ready(self, timeout: float = 10.0) -> bool:
         return self._db_ready_event.wait(timeout=timeout)
 
     def stop(self, timeout: float = 5.0) -> None:
-        if self._worker is None or not self._worker.is_alive(): return
+        if self._worker is None or not self._worker.is_alive():
+            return
         self.sync()  # On s'assure que tout est traité avant d'arrêter
-        with self._queue_lock: self._write_queue.append((None, None))
+        with self._queue_lock:
+            self._write_queue.append((None, None))
         self._stop_worker_event.set()
         self._worker.join(timeout=timeout)
         self._worker = None
@@ -110,26 +126,33 @@ class AsyncSQLite:
         sync_event = threading.Event()
         with self._queue_lock:
             # On ajoute le marqueur spécial à la fin de la file actuelle
-            self._write_queue.append(('__SYNC__', sync_event))
+            self._write_queue.append(("__SYNC__", sync_event))
 
         return sync_event.wait(timeout)
 
     # Les autres méthodes sont inchangées
     def execute_write(self, sql: str, params: Optional[tuple] = ()) -> None:
-        with self._queue_lock: self._write_queue.append((sql, params))
+        with self._queue_lock:
+            self._write_queue.append((sql, params))
 
-    def execute_read(self, sql: str, params: tuple = (), fetch: str = "all") -> Union[List[Tuple], Tuple, None]:
-        if not self._db_ready_event.is_set(): raise ConnectionError("Database is not ready yet.")
+    def execute_read(
+        self, sql: str, params: tuple = (), fetch: str = "all"
+    ) -> Union[List[Tuple], Tuple, None]:
+        if not self._db_ready_event.is_set():
+            raise ConnectionError("Database is not ready yet.")
         use_uri = self.db_path.startswith("file:")
-        with sqlite3.connect(self.db_path, uri=use_uri, check_same_thread=False, timeout=10) as conn:
+        with sqlite3.connect(
+            self.db_path, uri=use_uri, check_same_thread=False, timeout=10
+        ) as conn:
             cursor = conn.cursor()
             cursor.execute(sql, params)
-            if fetch == "one": return cursor.fetchone()
+            if fetch == "one":
+                return cursor.fetchone()
             return cursor.fetchall()
 
     def execute_script(self, script_path: str) -> None:
         try:
-            with open(script_path, 'r', encoding='utf-8') as f:
+            with open(script_path, "r", encoding="utf-8") as f:
                 script = f.read()
         except FileNotFoundError:
             logger.error(f"Script file not found: {script_path}")

@@ -42,4 +42,5 @@ dev = [
     "black",
     "ruff",
     "build",
+    "setuptools"
 ]
