@@ -44,4 +44,4 @@ build:
 clean:
 	@echo "🧹 Nettoyage du projet..."
 	rm -rf .venv build dist *.egg-info .pytest_cache
-	find . -type d -name "__pycache__" -exec rm -rf {} +
+	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
